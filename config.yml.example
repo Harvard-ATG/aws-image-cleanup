@@ -1,0 +1,25 @@
+# required
+tags:
+  someTag:
+    -  someValue
+    -  anotherValue
+  anotherTag:
+    - correctValue
+
+# optional
+exclusion_tags:
+  something:
+    -  someValue
+    -  anotherValue
+  else:
+    - correctValue
+
+# optional
+days_kept: 7
+
+# optional
+iterations_retained: 3
+
+# optional
+excluded_ids:
+  - an-amiId

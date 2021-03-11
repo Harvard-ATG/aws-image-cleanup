@@ -1,0 +1,13 @@
+{
+  "tags": {
+      "someTag": ["someValue", "anotherValue"],
+      "anotherTag": ["correctValue"],
+  },
+  "exclusion_tags": {
+      "something": ["someValue", "anotherValue"],
+      "else": ["correctValue"]
+  },
+  "days_kept": 7,
+  "iterations_retained": 3,
+  "excluded_ids": ["an-amiId"]
+}
