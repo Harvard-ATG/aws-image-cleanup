@@ -4,17 +4,34 @@ import json
 import yaml
 import os
 
-from utility_functions import not_int, time_to_live, latest_images, parse_config_file, parse_tags
+from utility_functions import (
+    not_int,
+    time_to_live,
+    latest_images,
+    parse_config_file,
+    parse_tags,
+)
 
 # TODO POSSIBLY MOVE AMI TO S3 -> for backup
 
-parser = argparse.ArgumentParser(description='Deregister unused targeted AMIs')
-parser.add_argument('-c','--config_file', nargs='?', type=argparse.FileType('r'),
-    help='Configuration file for targeting AMIs', required=True)
-parser.add_argument('-p', '--plan', action='store_true',
-    help='Provide output on exactly which AMIs will be deregistered')
-parser.add_argument('-e', '--execute', action='store_true',
-    help='Execute the deregistering of AMIs')
+parser = argparse.ArgumentParser(description="Deregister unused targeted AMIs")
+parser.add_argument(
+    "-c",
+    "--config_file",
+    nargs="?",
+    type=argparse.FileType("r"),
+    help="Configuration file for targeting AMIs",
+    required=True,
+)
+parser.add_argument(
+    "-p",
+    "--plan",
+    action="store_true",
+    help="Provide output on exactly which AMIs will be deregistered",
+)
+parser.add_argument(
+    "-e", "--execute", action="store_true", help="Execute the deregistering of AMIs"
+)
 
 args = parser.parse_args()
 
@@ -28,41 +45,39 @@ def handler(config, plan=True):
     if configuration == False:
         return False
 
-    if configuration['tags'] == "ALL":
+    if configuration["tags"] == "ALL":
         inclusion_filters = []
     else:
-        inclusion_filters = parse_tags(configuration['tags'])
+        inclusion_filters = parse_tags(configuration["tags"])
         if inclusion_filters == False:
             quit()
 
     # get all the images based on tags, that we own
-    included_images = client.images.filter(
-        Owners=['self'],
-        Filters=inclusion_filters
-    )
+    included_images = client.images.filter(Owners=["self"], Filters=inclusion_filters)
 
     # get a list of images that WE SHOULD NOT TOUCH
-    # just in case they sneak in 
+    # just in case they sneak in
     # TODO check that configuration['exclusion_tags'] len() > 0
     # TODO maybe the exclusion should also allow for "ALL" although it doesn't make mucch sense
-    if configuration['exclusion_tags']:
-        exclusion_filters = parse_tags(configuration['exclusion_tags'])
+    if configuration["exclusion_tags"]:
+        exclusion_filters = parse_tags(configuration["exclusion_tags"])
         if exclusion_filters == False:
             quit()
-        
+
         if exclusion_filters:
             exluded_images = client.images.filter(
-                Owners=['self'],
-                Filters=exclusion_filters
+                Owners=["self"], Filters=exclusion_filters
             )
         else:
             exluded_images = []
 
-    excluded_images_by_tags = [ image.id for image in exluded_images ]
-    specificly_excluded_ids = configuration['excluded_ids']
-    images_in_use = [instance.image_id for instance in client.instances.all()] # TODO check that this isnt just running instances
-    newest_images = latest_images(included_images, configuration['iterations_retained'])
-    young_images = time_to_live(included_images, configuration['days_kept'])
+    excluded_images_by_tags = [image.id for image in exluded_images]
+    specificly_excluded_ids = configuration["excluded_ids"]
+    images_in_use = [
+        instance.image_id for instance in client.instances.all()
+    ]  # TODO check that this isnt just running instances
+    newest_images = latest_images(included_images, configuration["iterations_retained"])
+    young_images = time_to_live(included_images, configuration["days_kept"])
     # TODO check if there is pagination
 
     set_of_image_ids_to_exclude = set(
@@ -84,8 +99,10 @@ def handler(config, plan=True):
         for image in included_images:
             if image.id not in set_of_image_ids_to_exclude:
                 print(f"{image.id}  {image.name}  {image.creation_date}")
-        second_confirmation = input("Would you like to deregister the above AMIs? ['yes' to confirm]: ")
-        if second_confirmation != 'yes':
+        second_confirmation = input(
+            "Would you like to deregister the above AMIs? ['yes' to confirm]: "
+        )
+        if second_confirmation != "yes":
             print("Exiting.")
             return False
         else:
@@ -97,12 +114,14 @@ def handler(config, plan=True):
 f = args.config_file
 file_extension = f.name.lower()
 
-if file_extension.endswith('.json'):
+if file_extension.endswith(".json"):
     config = json.load(f)
-elif (file_extension.endswith('.yml') or file_extension.endswith('.yaml')):
+elif file_extension.endswith(".yml") or file_extension.endswith(".yaml"):
     config = yaml.safe_load(f)
 else:
-    print("The --config-file argument must be a json or yaml file, and have a .json .yml or .yaml file  extension")
+    print(
+        "The --config-file argument must be a json or yaml file, and have a .json .yml or .yaml file  extension"
+    )
     quit()
 
 if args.plan:
@@ -114,10 +133,11 @@ elif not args.execute and not args.plan:
     quit()
 else:
     print("Running in EXECUTE mode")
-    confirmation = input("Are you sure you want to run in EXECUTE mode? ['yes' to confirm]: ")
-    if confirmation != 'yes':
+    confirmation = input(
+        "Are you sure you want to run in EXECUTE mode? ['yes' to confirm]: "
+    )
+    if confirmation != "yes":
         print("You can run this command with --plan to review the potential action.")
         quit()
     else:
         handler(config, plan=False)
-
