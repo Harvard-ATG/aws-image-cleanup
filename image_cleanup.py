@@ -6,12 +6,6 @@ import os
 from datetime import timedelta
 from dateutil import parser
 
-EXCLUSION_TAGS = os.environ.get('EXCLUSION_TAGS', '')
-TAGS = os.environ.get('TAGS', '')
-UNUSED_IMAGE_DAYS_KEPT = os.environ.get('UNUSED_IMAGE_DAYS_KEPT', 7)
-REGION = os.environ.get('REGION', 'us-east-1')
-EXCLUSION_IDS = os.environ.get('EXCLUSION_IDS', '')
-
 # TODO POSSIBLY MOVE AMI TO S3 -> for backup
 
 parser = argparse.ArgumentParser(description='Deregister unused targeted AMIs')
