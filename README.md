@@ -58,6 +58,10 @@ Run unit tests:
 
 `$ pytest -v`
 
+Run tox automated testing:
+
+`$ tox`
+
 Run code formatter:
 
 ```
