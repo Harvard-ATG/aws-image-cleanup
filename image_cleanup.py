@@ -5,14 +5,11 @@ import yaml
 import os
 
 from utility_functions import (
-    not_int,
     time_to_live,
     latest_images,
     parse_config_file,
     parse_tags,
 )
-
-# TODO POSSIBLY MOVE AMI TO S3 -> for backup
 
 parser = argparse.ArgumentParser(description="Deregister unused targeted AMIs")
 parser.add_argument(
@@ -40,7 +37,7 @@ def handler(config, plan=True):
 
     client = boto3.resource("ec2")
 
-    # perhaps I should parse the config so I dont need to check it everywhere
+    # parse the config file, so we don't need to check it everywhere
     configuration = parse_config_file(config)
     if configuration == False:
         return False

@@ -3,6 +3,7 @@ from dateutil import parser
 
 
 def not_int(val):
+    '''Takes a value, returns a bool whether it is an int or not'''
     try:
         int(val)
     except ValueError:
@@ -11,7 +12,10 @@ def not_int(val):
 
 
 def time_to_live(images, days_to_live):
-    # returns a list of image IDs
+    '''
+    Takes in an iterable of images, and an int.
+    Returns a list of image ids that have existed fewer days than the int provided.
+    '''
     return_list = []
     for image in images:
         image_date_created = parser.parse(image.creation_date, ignoretz=True)
@@ -21,10 +25,12 @@ def time_to_live(images, days_to_live):
 
 
 def latest_images(images, iterations_allowed):
-    # returns a dict of tuples
-    # returns:
-    # list of ids
-
+    '''
+    Takes in an iterable of images, and an int.
+    Groups images together by some features of image.name.
+    Returns a list of image ids that represent the number of iterations allowed less
+    than or equal to the int provided, from the groups created, sorted newest to oldest.
+    '''
     if iterations_allowed == 0:
         return []
 
@@ -56,8 +62,10 @@ def latest_images(images, iterations_allowed):
 
 
 def parse_config_file(config):
-    # check that tags is specified
-    # All other configurations may take a defualt value
+    '''
+    Takes in a dictionary.
+    Returns a dictionary of provided, or default values.
+    '''
     configuration = {}
     try:
         configuration["tags"] = config["tags"]
@@ -80,6 +88,10 @@ def parse_config_file(config):
 
 
 def parse_tags(tags):
+    '''
+    Takes in a dictionary, returns a list of dictionaries of provided data in 
+    a restructured way.
+    '''
     try:
         tag_filters = [
             {"Name": f"tag:{tag}", "Values": tags[tag]} for tag in tags.keys()
