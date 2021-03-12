@@ -2,7 +2,6 @@ import argparse
 import boto3
 import json
 import yaml
-import os
 
 from utility_functions import (
     time_to_live,
@@ -35,7 +34,7 @@ args = parser.parse_args()
 
 def handler(config, plan=True):
 
-    client = boto3.resource("ec2")
+    boto_resource = boto3.resource("ec2")
 
     # parse the config file, so we don't need to check it everywhere
     configuration = parse_config_file(config)
@@ -50,32 +49,34 @@ def handler(config, plan=True):
             quit()
 
     # get all the images based on tags, that we own
-    included_images = client.images.filter(Owners=["self"], Filters=inclusion_filters)
+    included_images = boto_resource.images.filter(
+        Owners=["self"], Filters=inclusion_filters
+    )
 
     # get a list of images that WE SHOULD NOT TOUCH
     # just in case they sneak in
-    # TODO check that configuration['exclusion_tags'] len() > 0
-    # TODO maybe the exclusion should also allow for "ALL" although it doesn't make mucch sense
+    if configuration["exclusion_tags"] == "ALL":
+        print("Exluding 'ALL' tags - meaning 'ALL' AMIs. Exiting.")
+        quit()
     if configuration["exclusion_tags"]:
         exclusion_filters = parse_tags(configuration["exclusion_tags"])
         if exclusion_filters == False:
             quit()
 
         if exclusion_filters:
-            exluded_images = client.images.filter(
+            exluded_images = boto_resource.images.filter(
                 Owners=["self"], Filters=exclusion_filters
             )
         else:
             exluded_images = []
+    else:
+        exluded_images = []
 
     excluded_images_by_tags = [image.id for image in exluded_images]
     specificly_excluded_ids = configuration["excluded_ids"]
-    images_in_use = [
-        instance.image_id for instance in client.instances.all()
-    ]  # TODO check that this isnt just running instances
+    images_in_use = [instance.image_id for instance in boto_resource.instances.all()]
     newest_images = latest_images(included_images, configuration["iterations_retained"])
     young_images = time_to_live(included_images, configuration["days_kept"])
-    # TODO check if there is pagination
 
     set_of_image_ids_to_exclude = set(
         excluded_images_by_tags

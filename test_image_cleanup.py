@@ -94,3 +94,4 @@ def test_parse_tags():
     assert parse_tags(correct_tags) == expected_output
     assert parse_tags(bad_tags) == False
     assert parse_tags([]) == False
+    assert parse_tags({}) == False

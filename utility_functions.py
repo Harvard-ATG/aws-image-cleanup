@@ -96,6 +96,9 @@ def parse_tags(tags):
         tag_filters = [
             {"Name": f"tag:{tag}", "Values": tags[tag]} for tag in tags.keys()
         ]
+        if len(tag_filters) == 0:
+            print("No valid tags generated")
+            return False
         for filter in tag_filters:
             if not isinstance(filter["Values"], list):
                 print("Tag values must be list")
