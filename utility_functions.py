@@ -23,10 +23,7 @@ def time_to_live(images, days_to_live):
 def latest_images(images, iterations_allowed):
     # returns a dict of tuples
     # returns:
-    # {
-    #     'one-image-name' : [(image.id, created_date), (image.id, created_date)],
-    #     'another-image-name' : [(image.id, created_date)]
-    # }
+    # list of ids
 
     if iterations_allowed == 0:
         return []
