@@ -107,3 +107,17 @@ def parse_tags(tags):
     except AttributeError:
         print("Tags not formatted correctly in configuration file")
         return False
+
+def deregister_loop(included_images, excluded_ids, plan):
+    '''
+    Takes iterable of images to deregister, list of image IDs to exclude from process, and boolean
+    of the mode of operation. Returns None. Side effects include printing the images to deregister
+    if plan is True, or calling deregister() on the image if plan is False
+    '''
+    for image in included_images:
+            if image.id not in excluded_ids:
+                if plan == True:
+                    print(f"{image.id}  {image.name}  {image.creation_date}")
+                else:
+                    print(f"This is where I would image.deregister() for {image.id}")
+    return
