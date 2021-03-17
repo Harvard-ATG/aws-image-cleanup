@@ -1,3 +1,4 @@
+from collections import deque
 from datetime import datetime, timedelta
 from dateutil import parser
 
@@ -34,31 +35,23 @@ def latest_images(images, iterations_allowed):
     if iterations_allowed == 0:
         return []
 
+    sorted_images = sorted(
+        images, key=lambda x: parser.parse(x.creation_date, ignoretz=True)
+    )
+
     images_by_name = {}
-    for image in images:
+    for image in sorted_images:
         # TODO make sure that I am checking all available types of ami naming conventions
         split_name = image.name.split("-")
         filtered_name = filter(not_int, split_name)
         joined_name = "-".join(filtered_name)
-        image_date_created = parser.parse(image.creation_date, ignoretz=True)
 
         if joined_name not in images_by_name.keys():
-            images_by_name[joined_name] = [(image.id, image_date_created)]
-        elif len(images_by_name[joined_name]) < iterations_allowed:
-            images_by_name[joined_name].append(((image.id, image_date_created)))
-        elif len(images_by_name[joined_name]) >= iterations_allowed:
-            # sort the list of tuples based on second tuple value oldest to newest
-            images_by_name[joined_name].sort(key=lambda x: x[1])
-            # if this image is newer than the oldest image in the list
-            if image_date_created > images_by_name[joined_name][0][1]:
-                images_by_name[joined_name].pop(0)  # remove the older one
-                images_by_name[joined_name].append(
-                    (image.id, image_date_created)
-                )  # append this image
+            images_by_name[joined_name] = deque(maxlen=iterations_allowed)
 
-    # we dont actually need the created_date or the supposed image names
-    # so just return a list of IDs
-    return [tup[0] for name in images_by_name for tup in images_by_name[name]]
+        images_by_name[joined_name].append(image.id)
+
+    return [image_id for name in images_by_name for image_id in images_by_name[name]]
 
 
 def parse_config_file(config):
