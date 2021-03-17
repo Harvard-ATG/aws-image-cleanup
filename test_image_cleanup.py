@@ -99,13 +99,18 @@ def test_parse_tags():
     assert parse_tags([]) == False
     assert parse_tags({}) == False
 
-@patch('builtins.print')
+
+@patch("builtins.print")
 def test_deregister_loop(mocked_print):
-    test_image = ExampleImage(1,"May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543")
-    deregister_loop([test_image], [], True) # "call" once
-    deregister_loop([test_image], [], False) # "call" again
-    deregister_loop([test_image], [1], False) # "call" again, but shouldn't do anything
+    test_image = ExampleImage(
+        1, "May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543"
+    )
+    deregister_loop([test_image], [], True)  # "call" once
+    deregister_loop([test_image], [], False)  # "call" again
+    deregister_loop([test_image], [1], False)  # "call" again, but shouldn't do anything
     assert mocked_print.mock_calls == [
-        call('1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4'), # plan == True
-        call('This is where I would image.deregister() for 1') # plan == False
+        call(
+            "1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"
+        ),  # plan == True
+        call("This is where I would image.deregister() for 1"),  # plan == False
     ]

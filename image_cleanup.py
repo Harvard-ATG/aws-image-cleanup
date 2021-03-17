@@ -94,7 +94,7 @@ def handler(config, plan=True):
 
     if plan == False:
         print("The following AMIs WILL BE deregistered:")
-        deregister_loop(included_images, set_of_image_ids_to_exclude, !plan)
+        deregister_loop(included_images, set_of_image_ids_to_exclude, not plan)
         second_confirmation = input(
             "Would you like to deregister the above AMIs? ['yes' to confirm]: "
         )
