@@ -27,7 +27,7 @@ def time_to_live(images, days_to_live):
 
 def latest_images(images, iterations_allowed):
     """
-    Takes in an iterable of images, and an int.
+    Takes an iterable of image objects, and an int.
     Groups images together by some features of image.name.
     Returns a list of image ids that represent the number of iterations allowed less
     than or equal to the int provided, from the groups created, sorted newest to oldest.
@@ -114,4 +114,25 @@ def deregister_loop(included_images, excluded_ids, plan):
                 print(f"{image.id}  {image.name}  {image.creation_date}")
             else:
                 print(f"This is where I would image.deregister() for {image.id}")
+    return
+
+
+def verbose_exclusion_loops(included_images, exclusion_categories):
+    """
+    Takes an iterable of image objects and a list of tuples. The tuples contain the list of
+    IDs to exclude, as well as a message explaining what the list is. Returns None. Side effects
+    include printing image information.
+    """
+    print(
+        "The following images have been excluded from degrestration by the following categories"
+    )
+    for category in exclusion_categories:
+        has_printed = False
+        for image in included_images:
+            if image.id in category[0]:
+                if has_printed == False:
+                    print(f"Excluded by {category[1]}:")
+                    has_printed = True
+                print(f"{image.id}  {image.name}  {image.creation_date}")
+        print("----")
     return
