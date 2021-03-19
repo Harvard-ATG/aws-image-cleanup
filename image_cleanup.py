@@ -35,7 +35,7 @@ parser.add_argument(
     "-v",
     "--verbose",
     action="store_true",
-    help="Provide output for AMIs that are being exlcuded",
+    help="Provide output for AMIs that are being excluded",
 )
 
 args = parser.parse_args()
@@ -117,7 +117,7 @@ def handler(config, plan=True, verbose=False):
             (specificly_excluded_ids, "'excluded_ids' defined in the config"),
             (
                 images_in_use,
-                "'images_in_use' - images that associated with an instance",
+                "'images_in_use' - images that are associated with an instance",
             ),
             (
                 newest_images,
