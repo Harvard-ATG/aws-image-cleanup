@@ -1,9 +1,13 @@
+from unittest.mock import patch, call
+
 from utility_functions import (
     not_int,
     time_to_live,
     latest_images,
     parse_config_file,
     parse_tags,
+    deregister_loop,
+    verbose_exclusion_loops,
 )
 
 
@@ -95,3 +99,42 @@ def test_parse_tags():
     assert parse_tags(bad_tags) == False
     assert parse_tags([]) == False
     assert parse_tags({}) == False
+
+
+@patch("builtins.print")
+def test_deregister_loop(mocked_print):
+    test_image = ExampleImage(
+        1, "May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543"
+    )
+    deregister_loop([test_image], [], True)  # "call" once
+    deregister_loop([test_image], [], False)  # "call" again
+    deregister_loop([test_image], [1], False)  # "call" again, but shouldn't do anything
+    assert mocked_print.mock_calls == [
+        call("1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"),
+        call("This is where I would image.deregister() for 1"),
+    ]
+
+
+@patch("builtins.print")
+def test_verbose_exclusion_loops(mocked_print):
+    test_image = ExampleImage(
+        1, "May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543"
+    )
+    categories = [
+        ([1], "category one"),
+        ([2, 3, 4], "category two"),
+        ([3, 4, 1], "category three"),
+    ]
+    verbose_exclusion_loops([test_image], categories)
+    assert mocked_print.mock_calls == [
+        call(
+            "The following images have been excluded from degrestration by the following categories"
+        ),
+        call("Excluded by category one:"),
+        call("1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"),
+        call("----"),
+        call("----"),
+        call("Excluded by category three:"),
+        call("1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"),
+        call("----"),
+    ]

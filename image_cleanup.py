@@ -1,6 +1,7 @@
 import argparse
 import boto3
 import json
+import sys
 import yaml
 
 from utility_functions import (
@@ -8,6 +9,8 @@ from utility_functions import (
     latest_images,
     parse_config_file,
     parse_tags,
+    deregister_loop,
+    verbose_exclusion_loops,
 )
 
 parser = argparse.ArgumentParser(description="Deregister unused targeted AMIs")
@@ -28,11 +31,17 @@ parser.add_argument(
 parser.add_argument(
     "-e", "--execute", action="store_true", help="Execute the deregistering of AMIs"
 )
+parser.add_argument(
+    "-v",
+    "--verbose",
+    action="store_true",
+    help="Provide output for AMIs that are being excluded",
+)
 
 args = parser.parse_args()
 
 
-def handler(config, plan=True):
+def handler(config, plan=True, verbose=False):
 
     boto_resource = boto3.resource("ec2")
 
@@ -46,7 +55,7 @@ def handler(config, plan=True):
     else:
         inclusion_filters = parse_tags(configuration["tags"])
         if inclusion_filters == False:
-            quit()
+            sys.exit()
 
     # get all the images based on tags, that we own
     included_images = boto_resource.images.filter(
@@ -57,11 +66,11 @@ def handler(config, plan=True):
     # just in case they sneak in
     if configuration["exclusion_tags"] == "ALL":
         print("Exluding 'ALL' tags - meaning 'ALL' AMIs. Exiting.")
-        quit()
+        sys.exit()
     if configuration["exclusion_tags"]:
         exclusion_filters = parse_tags(configuration["exclusion_tags"])
         if exclusion_filters == False:
-            quit()
+            sys.exit()
 
         if exclusion_filters:
             exluded_images = boto_resource.images.filter(
@@ -88,15 +97,11 @@ def handler(config, plan=True):
 
     if plan == True:
         print("The following AMIs would be deregistered:")
-        for image in included_images:
-            if image.id not in set_of_image_ids_to_exclude:
-                print(f"{image.id}  {image.name}  {image.creation_date}")
+        deregister_loop(included_images, set_of_image_ids_to_exclude, plan)
 
     if plan == False:
         print("The following AMIs WILL BE deregistered:")
-        for image in included_images:
-            if image.id not in set_of_image_ids_to_exclude:
-                print(f"{image.id}  {image.name}  {image.creation_date}")
+        deregister_loop(included_images, set_of_image_ids_to_exclude, not plan)
         second_confirmation = input(
             "Would you like to deregister the above AMIs? ['yes' to confirm]: "
         )
@@ -104,9 +109,26 @@ def handler(config, plan=True):
             print("Exiting.")
             return False
         else:
-            for image in included_images:
-                if image.id not in set_of_image_ids_to_exclude:
-                    print(f"This is where I would image.deregister() for {image.id}")
+            deregister_loop(included_images, set_of_image_ids_to_exclude, plan)
+
+    if verbose == True:
+        exclusion_categories = [
+            (excluded_images_by_tags, "'exclusion_tags' defined in the config"),
+            (specificly_excluded_ids, "'excluded_ids' defined in the config"),
+            (
+                images_in_use,
+                "'images_in_use' - images that are associated with an instance",
+            ),
+            (
+                newest_images,
+                "'newest_images' - images that fit within the 'iterations_retained' config",
+            ),
+            (
+                young_images,
+                "'young_images' - images that are newer than the 'days_kept' config",
+            ),
+        ]
+        verbose_exclusion_loops(included_images, exclusion_categories)
 
 
 f = args.config_file
@@ -118,17 +140,17 @@ elif file_extension.endswith(".yml") or file_extension.endswith(".yaml"):
     config = yaml.safe_load(f)
 else:
     print(
-        "The --config-file argument must be a json or yaml file, and have a .json .yml or .yaml file  extension"
+        "The --config-file argument must be a json or yaml file, and have a .json .yml or .yaml extension"
     )
-    quit()
+    sys.exit()
 
 if args.plan:
     print("Running in PLAN mode")
-    handler(config, plan=True)
+    handler(config, plan=True, verbose=args.verbose)
 elif not args.execute and not args.plan:
     print("Please, specify if you would like to run --plan or --execute.")
     print("If you are unsure, run in PLAN mode with --plan")
-    quit()
+    sys.exit()
 else:
     print("Running in EXECUTE mode")
     confirmation = input(
@@ -136,6 +158,6 @@ else:
     )
     if confirmation != "yes":
         print("You can run this command with --plan to review the potential action.")
-        quit()
+        sys.exit()
     else:
-        handler(config, plan=False)
+        handler(config, plan=False, verbose=args.verbose)
