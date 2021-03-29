@@ -86,7 +86,6 @@ def handler(config, plan=True, verbose=False):
         else:
             deregister_loop(included_images, set_of_image_ids_to_exclude, plan)
 
-
     if verbose == True:
         exclusion_categories = [
             (excluded_images_by_tags, "'exclusion_tags' defined in the config"),
