@@ -5,17 +5,20 @@ import sys
 import yaml
 
 from utility_functions import (
-    time_to_live,
+    deregister_loop,
     latest_images,
     parse_config_file,
     parse_tags,
-    deregister_loop,
+    time_to_live,
     verbose_exclusion_loops,
 )
 
 
 def handler(config, plan=True, verbose=False):
-
+    """
+    Takes a config dict, plan bool, and verbose bool. Returns int (0,1) to mark pass or error.
+    Side effects include printing image information, getting user input and deregistering images.
+    """
     boto_resource = boto3.resource("ec2")
 
     # parse the config file, so we don't need to check it everywhere
@@ -71,8 +74,7 @@ def handler(config, plan=True, verbose=False):
     if plan == True:
         print("The following AMIs would be deregistered:")
         deregister_loop(included_images, set_of_image_ids_to_exclude, plan)
-
-    if plan == False:
+    else:
         print("The following AMIs WILL BE deregistered:")
         deregister_loop(included_images, set_of_image_ids_to_exclude, not plan)
         second_confirmation = input(
@@ -83,6 +85,7 @@ def handler(config, plan=True, verbose=False):
             return 0
         else:
             deregister_loop(included_images, set_of_image_ids_to_exclude, plan)
+
 
     if verbose == True:
         exclusion_categories = [
@@ -148,7 +151,7 @@ def main(argv=None):
 
     if args.plan:
         print("Running in PLAN mode")
-        handler(config, plan=True, verbose=args.verbose)
+        return handler(config, plan=True, verbose=args.verbose)
     elif not args.execute and not args.plan:
         print("Please, specify if you would like to run --plan or --execute.")
         print("If you are unsure, run in PLAN mode with --plan")
