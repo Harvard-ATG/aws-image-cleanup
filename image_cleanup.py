@@ -13,33 +13,6 @@ from utility_functions import (
     verbose_exclusion_loops,
 )
 
-parser = argparse.ArgumentParser(description="Deregister unused targeted AMIs")
-parser.add_argument(
-    "-c",
-    "--config_file",
-    nargs="?",
-    type=argparse.FileType("r"),
-    help="Configuration file for targeting AMIs",
-    required=True,
-)
-parser.add_argument(
-    "-p",
-    "--plan",
-    action="store_true",
-    help="Provide output on exactly which AMIs will be deregistered",
-)
-parser.add_argument(
-    "-e", "--execute", action="store_true", help="Execute the deregistering of AMIs"
-)
-parser.add_argument(
-    "-v",
-    "--verbose",
-    action="store_true",
-    help="Provide output for AMIs that are being excluded",
-)
-
-args = parser.parse_args()
-
 
 def handler(config, plan=True, verbose=False):
 
@@ -48,14 +21,14 @@ def handler(config, plan=True, verbose=False):
     # parse the config file, so we don't need to check it everywhere
     configuration = parse_config_file(config)
     if configuration == False:
-        return False
+        return 1
 
     if configuration["tags"] == "ALL":
         inclusion_filters = []
     else:
         inclusion_filters = parse_tags(configuration["tags"])
         if inclusion_filters == False:
-            sys.exit()
+            return 1
 
     # get all the images based on tags, that we own
     included_images = boto_resource.images.filter(
@@ -66,11 +39,11 @@ def handler(config, plan=True, verbose=False):
     # just in case they sneak in
     if configuration["exclusion_tags"] == "ALL":
         print("Exluding 'ALL' tags - meaning 'ALL' AMIs. Exiting.")
-        sys.exit()
+        return 1
     if configuration["exclusion_tags"]:
         exclusion_filters = parse_tags(configuration["exclusion_tags"])
         if exclusion_filters == False:
-            sys.exit()
+            return 1
 
         if exclusion_filters:
             exluded_images = boto_resource.images.filter(
@@ -107,7 +80,7 @@ def handler(config, plan=True, verbose=False):
         )
         if second_confirmation != "yes":
             print("Exiting.")
-            return False
+            return 0
         else:
             deregister_loop(included_images, set_of_image_ids_to_exclude, plan)
 
@@ -129,35 +102,70 @@ def handler(config, plan=True, verbose=False):
             ),
         ]
         verbose_exclusion_loops(included_images, exclusion_categories)
+    return 0
 
 
-f = args.config_file
-file_extension = f.name.lower()
-
-if file_extension.endswith(".json"):
-    config = json.load(f)
-elif file_extension.endswith(".yml") or file_extension.endswith(".yaml"):
-    config = yaml.safe_load(f)
-else:
-    print(
-        "The --config-file argument must be a json or yaml file, and have a .json .yml or .yaml extension"
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Deregister unused targeted AMIs")
+    parser.add_argument(
+        "-c",
+        "--config_file",
+        nargs="?",
+        type=argparse.FileType("r"),
+        help="Configuration file for targeting AMIs",
+        required=True,
     )
-    sys.exit()
-
-if args.plan:
-    print("Running in PLAN mode")
-    handler(config, plan=True, verbose=args.verbose)
-elif not args.execute and not args.plan:
-    print("Please, specify if you would like to run --plan or --execute.")
-    print("If you are unsure, run in PLAN mode with --plan")
-    sys.exit()
-else:
-    print("Running in EXECUTE mode")
-    confirmation = input(
-        "Are you sure you want to run in EXECUTE mode? ['yes' to confirm]: "
+    parser.add_argument(
+        "-p",
+        "--plan",
+        action="store_true",
+        help="Provide output on exactly which AMIs will be deregistered",
     )
-    if confirmation != "yes":
-        print("You can run this command with --plan to review the potential action.")
-        sys.exit()
+    parser.add_argument(
+        "-e", "--execute", action="store_true", help="Execute the deregistering of AMIs"
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Provide output for AMIs that are being excluded",
+    )
+
+    args = parser.parse_args(argv)
+
+    f = args.config_file
+    file_extension = f.name.lower()
+
+    if file_extension.endswith(".json"):
+        config = json.load(f)
+    elif file_extension.endswith(".yml") or file_extension.endswith(".yaml"):
+        config = yaml.safe_load(f)
     else:
-        handler(config, plan=False, verbose=args.verbose)
+        print(
+            "The --config-file argument must be a json or yaml file, and have a .json .yml or .yaml extension"
+        )
+        return 1
+
+    if args.plan:
+        print("Running in PLAN mode")
+        handler(config, plan=True, verbose=args.verbose)
+    elif not args.execute and not args.plan:
+        print("Please, specify if you would like to run --plan or --execute.")
+        print("If you are unsure, run in PLAN mode with --plan")
+        return 1
+    else:
+        print("Running in EXECUTE mode")
+        confirmation = input(
+            "Are you sure you want to run in EXECUTE mode? ['yes' to confirm]: "
+        )
+        if confirmation != "yes":
+            print(
+                "You can run this command with --plan to review the potential action."
+            )
+            return 0
+        else:
+            return handler(config, plan=False, verbose=args.verbose)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
