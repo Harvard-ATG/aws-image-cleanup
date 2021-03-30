@@ -15,6 +15,9 @@ class ExampleImage:
         self.creation_date = creation_date
         self.name = name
 
+    def deregister(self):
+        pass
+
 
 test_images = [
     (1, "May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543"),
@@ -109,7 +112,7 @@ def test_deregister_loop(capsys):
     captured = capsys.readouterr()
     expected_prints = [
         "1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4",
-        "This is where I would image.deregister() for 1",
+        "deregistering 1",
     ]
     for statement in expected_prints:
         assert statement in captured.out
