@@ -113,7 +113,8 @@ def deregister_loop(included_images, excluded_ids, plan):
             if plan == True:
                 print(f"{image.id}  {image.name}  {image.creation_date}")
             else:
-                print(f"This is where I would image.deregister() for {image.id}")
+                print(f"deregistering {image.id}")
+                image.deregister()
     return
 
 

@@ -1,5 +1,3 @@
-from unittest.mock import patch, call
-
 from utility_functions import (
     not_int,
     time_to_live,
@@ -16,6 +14,9 @@ class ExampleImage:
         self.id = amiId
         self.creation_date = creation_date
         self.name = name
+
+    def deregister(self):
+        pass
 
 
 test_images = [
@@ -101,22 +102,23 @@ def test_parse_tags():
     assert parse_tags({}) == False
 
 
-@patch("builtins.print")
-def test_deregister_loop(mocked_print):
+def test_deregister_loop(capsys):
     test_image = ExampleImage(
         1, "May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543"
     )
     deregister_loop([test_image], [], True)  # "call" once
     deregister_loop([test_image], [], False)  # "call" again
     deregister_loop([test_image], [1], False)  # "call" again, but shouldn't do anything
-    assert mocked_print.mock_calls == [
-        call("1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"),
-        call("This is where I would image.deregister() for 1"),
+    captured = capsys.readouterr()
+    expected_prints = [
+        "1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4",
+        "deregistering 1",
     ]
+    for statement in expected_prints:
+        assert statement in captured.out
 
 
-@patch("builtins.print")
-def test_verbose_exclusion_loops(mocked_print):
+def test_verbose_exclusion_loops(capsys):
     test_image = ExampleImage(
         1, "May 1, 2020 at 10:19:24 AM UTC-4", "atg-test1-123423543"
     )
@@ -126,15 +128,13 @@ def test_verbose_exclusion_loops(mocked_print):
         ([3, 4, 1], "category three"),
     ]
     verbose_exclusion_loops([test_image], categories)
-    assert mocked_print.mock_calls == [
-        call(
-            "The following images have been excluded from degrestration by the following categories"
-        ),
-        call("Excluded by category one:"),
-        call("1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"),
-        call("----"),
-        call("----"),
-        call("Excluded by category three:"),
-        call("1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4"),
-        call("----"),
+    captured = capsys.readouterr()
+    expected_prints = [
+        "The following images have been excluded from degrestration by the following categories",
+        "Excluded by category one:",
+        "1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4",
+        "Excluded by category three:",
+        "1  atg-test1-123423543  May 1, 2020 at 10:19:24 AM UTC-4",
     ]
+    for statement in expected_prints:
+        assert statement in captured.out
